@@ -90,8 +90,8 @@ try {
                 return true;
             }
 
-            // n+1개의 배수 스킵 (19, 37, 55...)
-            if (settings.skipEveryNPlus1 && remainder === 1) {
+            // n+1개의 배수 스킵 (19, 37, 55...) - ID 1은 제외
+            if (settings.skipEveryNPlus1 && remainder === 1 && messageId !== 1) {
                 return true;
             }
 
