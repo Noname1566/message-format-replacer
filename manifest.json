@@ -1,0 +1,11 @@
+{
+    "display_name": "Message Format Replacer",
+    "loading_order": 50,
+    "requires": [],
+    "optional": [],
+    "js": "index.js",
+    "css": "style.css",
+    "author": "Anonymous",
+    "version": "1.0.0",
+    "description": "Automatically replaces <format> tags with {{/}} format in previous messages"
+}
