@@ -152,22 +152,68 @@ try {
             return processedCount;
         }
 
-        // 메시지 하나 처리
+        // 메시지 하나 처리 (중복 처리 방지 개선)
         function processMessage(message, index) {
             const tagName = settings.tagName || 'format';
-            const formatRegex = new RegExp(`<${tagName}([^>]*)>([\\s\\S]*?)<\\/${tagName}>`, 'gi');
             const originalContent = message.mes;
-
-            if (formatRegex.test(originalContent)) {
-                formatRegex.lastIndex = 0;
-                const newContent = originalContent.replace(formatRegex, function (match, attributes, content) {
-                    return `(((<${tagName}${attributes}>${content}</${tagName}>)))`;
+            
+            // 처리할 태그를 찾되, 이미 ((()))로 감싸진 것은 제외
+            const wrappedTagRegex = new RegExp(`\\(\\(\\(<${tagName}[^>]*>[\\s\\S]*?<\\/${tagName}>\\)\\)\\)`, 'gi');
+            const formatTagRegex = new RegExp(`<${tagName}([^>]*)>([\\s\\S]*?)<\\/${tagName}>`, 'gi');
+            
+            // 먼저 이미 처리된 태그들의 위치를 파악
+            const wrappedRanges = [];
+            let wrappedMatch;
+            while ((wrappedMatch = wrappedTagRegex.exec(originalContent)) !== null) {
+                wrappedRanges.push({
+                    start: wrappedMatch.index,
+                    end: wrappedMatch.index + wrappedMatch[0].length
                 });
-
-                if (newContent !== originalContent) {
-                    message.mes = newContent;
-                    return true;
+            }
+            
+            // 처리되지 않은 태그만 찾아서 감싸기
+            let hasChanges = false;
+            let newContent = originalContent;
+            let offset = 0; // 문자열 길이 변화로 인한 오프셋
+            
+            formatTagRegex.lastIndex = 0; // 정규식 인덱스 리셋
+            let formatMatch;
+            const replacements = [];
+            
+            while ((formatMatch = formatTagRegex.exec(originalContent)) !== null) {
+                const matchStart = formatMatch.index;
+                const matchEnd = formatMatch.index + formatMatch[0].length;
+                
+                // 이 태그가 이미 처리된 범위 안에 있는지 확인
+                let isAlreadyWrapped = false;
+                for (const range of wrappedRanges) {
+                    if (matchStart >= range.start && matchEnd <= range.end) {
+                        isAlreadyWrapped = true;
+                        break;
+                    }
                 }
+                
+                if (!isAlreadyWrapped) {
+                    replacements.push({
+                        start: matchStart,
+                        end: matchEnd,
+                        original: formatMatch[0],
+                        replacement: `(((<${tagName}${formatMatch[1]}>${formatMatch[2]}</${tagName}>)))`
+                    });
+                }
+            }
+            
+            // 뒤에서부터 앞으로 교체 (인덱스 변화 방지)
+            replacements.reverse().forEach(replacement => {
+                newContent = newContent.substring(0, replacement.start) + 
+                           replacement.replacement + 
+                           newContent.substring(replacement.end);
+                hasChanges = true;
+            });
+
+            if (hasChanges && newContent !== originalContent) {
+                message.mes = newContent;
+                return true;
             }
 
             return false;
