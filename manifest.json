@@ -4,8 +4,9 @@
     "requires": [],
     "optional": [],
     "js": "index.js",
-    "css": "style.css",
+    "css": "",
     "author": "Anonymous",
     "version": "1.0.0",
-    "description": "Automatically replaces <format> tags with {{/}} format in previous messages"
+    "homePage": "",
+    "description": "메시지 포맷 태그를 숨김 처리로 변환하는 확장 프로그램"
 }
